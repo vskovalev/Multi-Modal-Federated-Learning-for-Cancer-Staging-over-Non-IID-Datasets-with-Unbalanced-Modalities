@@ -3,12 +3,10 @@ import torch
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
-import random
-import math
-from collections import defaultdict
+import logging
 
 CLIENT_LIST = {"client_1": "LUSC", "client_2": "BRCA", "client_3": "LIHC", "client_central":"Complete"}
-from dataset_utils import collect_labels_from_df, remove_unwanted_labels, map_to_one_hot, map_to_one_hot_binary
+from dataset_utils import remove_unwanted_labels, map_to_one_hot, map_to_one_hot_binary
 
 
 class CustomRNADataset(Dataset):
@@ -58,7 +56,7 @@ class CustomRNADatasetBIG(Dataset):
         genes_path = os.path.join(".", "mRNA_features", genes_filename)
         gene_table = pd.read_table(genes_path, delimiter=',', low_memory=False).apply(lambda x: x.astype(str).str.lower())
         gene_table = gene_table.transpose()
-        # print(len(gene_table))
+        # logging.info(len(gene_table))
         gene_table.reset_index(inplace=True)
         gene_table.rename(columns={'index':'pid'}, inplace=True)
         gene_table['pid'] = gene_table.pid.map(lambda x: x.lower())
@@ -67,7 +65,7 @@ class CustomRNADatasetBIG(Dataset):
         gene_table.drop(index=0, inplace=True)
         gene_table['seq_mode'] = gene_table.pid.map(lambda x: x[13:15])
         remove_ids = gene_table.loc[gene_table['seq_mode']=='11'].index
-        # print("remove ids len: ", len(remove_ids))
+        # logging.info("remove ids len: ", len(remove_ids))
         gene_table.drop(index=remove_ids.values, inplace=True)
 
         stages_path = "Complete_stages.csv"
@@ -76,10 +74,10 @@ class CustomRNADatasetBIG(Dataset):
         stages_table.head()
         stages_table['pid'] = stages_table.pid.map(lambda x: x.replace('-', '_'))
 
-        # print(len(stages_table))
+        # logging.info(len(stages_table))
 
 
-        # print("before: ", len(gene_table))
+        # logging.info("before: ", len(gene_table))
 
         for i in gene_table.index.values:
             if gene_table.pid.loc[i][:12] not in stages_table.pid.values:
@@ -87,7 +85,7 @@ class CustomRNADatasetBIG(Dataset):
 
         gene_table['headless'] = gene_table.pid.map(lambda x: x[:12])
 
-        # print("after: ", len(gene_table))
+        # logging.info("after: ", len(gene_table))
 
         for stage_id in stages_table.index.values:
             if stages_table.pid.loc[stage_id] not in gene_table.headless.values:
@@ -99,9 +97,9 @@ class CustomRNADatasetBIG(Dataset):
         final_df = remove_unwanted_labels(final_df)
         final_df['stage'] = final_df['stage'].map(lambda x: map_to_one_hot_binary(x))
 
-        print(final_df.stage.value_counts())
+        logging.info(final_df.stage.value_counts())
 
-        # print(final_df.columns)
+        # logging.info(final_df.columns)
 
         self.features = final_df.drop(columns=['stage', 'Unnamed: 0.1']).astype(np.float32).values
         self.labels = final_df.stage.values
@@ -110,7 +108,7 @@ class CustomRNADatasetBIG(Dataset):
         self.num_samples = len(self.labels)
         self.num_features = self.features.shape[1]
 
-        # print(self.num_features)
+        # logging.info(self.num_features)
 
     
     def reduce_to(self, index_list):
@@ -118,7 +116,7 @@ class CustomRNADatasetBIG(Dataset):
         self.labels = self.labels[index_list]
         self.num_samples = len(self.labels)
         self.num_features = self.features.shape[1]
-        # print(self.num_samples)
+        # logging.info(self.num_samples)
 
 
     def __len__(self):

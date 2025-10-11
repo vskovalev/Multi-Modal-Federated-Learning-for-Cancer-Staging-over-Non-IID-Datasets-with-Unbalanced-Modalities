@@ -1,32 +1,29 @@
 import os
-import torch
 import numpy as np
 import pandas as pd
 # from torchvision import transforms as transforms
-from torch.utils.data import Dataset
 import random
-import math
 from collections import defaultdict
+import logging
 
-from dataset_utils import collect_labels_from_df, remove_unwanted_labels, map_to_one_hot, map_to_one_hot_binary
 from datasets.dataset_classes import CustomMultiModalDatasetStratified
 
 def split_mm_centralized_strat_gb(features, labels, fraction, modalities, column_map, dataset_name, random_state=None):
     
     # data_path = os.path.join(".", "multi_modal_features", time_label)
 
-    print(modalities)
+    logging.info(modalities)
 
     if random_state:
         random.seed(random_state)
 
     indices_per_label = defaultdict(list)
     
-    print(labels['stage'].unique())
+    logging.info(labels['stage'].unique())
     
     for stage in labels['stage'].unique():
         indices_per_label[stage] = labels[labels['stage']==stage].index.values
-        # print(f"len indices for label {stage}: {len(indices_per_label[stage])}")
+        # logging.info(f"len indices for label {stage}: {len(indices_per_label[stage])}")
     
     first_set_indices, second_set_indices = list(), list()
 
@@ -35,8 +32,8 @@ def split_mm_centralized_strat_gb(features, labels, fraction, modalities, column
         random_indices_sample = random.sample(indices.tolist(), n_samples_for_label)
         first_set_indices.extend(random_indices_sample)
         second_set_indices.extend(set(indices.tolist()) - set(random_indices_sample))
-        # print(f"first set indices number for stage {label}: {len(first_set_indices)}")
-        # print(f"second set indices number for stage {label}: {len(second_set_indices)}")
+        # logging.info(f"first set indices number for stage {label}: {len(first_set_indices)}")
+        # logging.info(f"second set indices number for stage {label}: {len(second_set_indices)}")
     
     
     first_set_inputs = features.loc[first_set_indices]
@@ -114,18 +111,18 @@ def create_mm_centralized_strat(features, labels, fraction, modalities, column_m
     
     # data_path = os.path.join(".", "multi_modal_features", time_label)
 
-    print(modalities)
+    logging.info(modalities)
 
     if random_state:
         random.seed(random_state)
 
     indices_per_label = defaultdict(list)
     
-    print(labels['stage'].unique())
+    logging.info(labels['stage'].unique())
     
     for stage in labels['stage'].unique():
         indices_per_label[stage] = labels[labels['stage']==stage].index.values
-        print(f"len indices for label {stage}: {len(indices_per_label[stage])}")
+        logging.info(f"len indices for label {stage}: {len(indices_per_label[stage])}")
     
     first_set_indices, second_set_indices = list(), list()
 
@@ -134,8 +131,8 @@ def create_mm_centralized_strat(features, labels, fraction, modalities, column_m
         random_indices_sample = random.sample(indices.tolist(), n_samples_for_label)
         first_set_indices.extend(random_indices_sample)
         second_set_indices.extend(set(indices.tolist()) - set(random_indices_sample))
-        print(f"first set indices number for stage {label}: {len(first_set_indices)}")
-        print(f"second set indices number for stage {label}: {len(second_set_indices)}")
+        logging.info(f"first set indices number for stage {label}: {len(first_set_indices)}")
+        logging.info(f"second set indices number for stage {label}: {len(second_set_indices)}")
     
     
     first_set_inputs = features.loc[first_set_indices]

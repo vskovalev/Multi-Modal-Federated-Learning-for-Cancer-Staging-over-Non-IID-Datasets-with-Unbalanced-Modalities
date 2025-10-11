@@ -1,13 +1,9 @@
-import os
-import torch
 import numpy as np
 import pandas as pd
-from torch.utils.data import Dataset
 import random
-import math
 from collections import defaultdict
 
-from dataset_utils import collect_labels_from_df, remove_unwanted_labels, map_to_one_hot, map_to_one_hot_binary
+from dataset_utils import remove_unwanted_labels, map_to_one_hot_binary
 from datasets.dataset_classes import CustomClinicalDatasetStratified
 
 
@@ -24,7 +20,7 @@ def build_clin_train_test_strat(fraction, random_state=None):
     indices_per_label = defaultdict(list)
 
     for index, label in enumerate(labels):
-        # print(np.argmax(label))
+        # logging.info(np.argmax(label))
         indices_per_label[np.argmax(label)].append(index)
     
     first_set_indices, second_set_indices = list(), list()

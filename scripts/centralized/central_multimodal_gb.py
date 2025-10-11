@@ -4,21 +4,20 @@ import os
 import torch
 from torch import nn
 from torch import optim
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
-import pandas as pd
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score
 from datetime import datetime
 import argparse
-from collections import defaultdict
+import logging
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from datasets.multimodal_central import create_datasets_mm_centralized_gb
 from models import CustomGBFederatedModelSimulOut
-from torchvision import transforms, datasets
-from setup_utils import setup_gpu_device
+from scripts.utils.setup_utils import setup_gpu_device
 from train_functions.centralized.gb import train_and_validate_simul_gb, initialize_loss_dicts, initialize_weight_dict, calculate_weights
-from training_gb_centralized import train_model, validate_model
 
 
 # BATCH_SIZE = 16
@@ -93,20 +92,20 @@ def main():
 
     # Create test and train datasets
     valid_dataset, train_gb_dataset, train_dataset = create_datasets_mm_centralized_gb(args.data_path, args.validation_split, args.random_seed)
-    print("Individual datasets created")
+    logging.info("Individual datasets created")
 
     # Create dataloaders
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=args.shuffle_dataset)
     valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=args.shuffle_dataset)
     train_gb_loader = DataLoader(train_gb_dataset, batch_size=args.batch_size, shuffle=args.shuffle_dataset)
     
-    print("Dataloaders created")
+    logging.info("Dataloaders created")
     
     # Create model
     model = CustomGBFederatedModelSimulOut(train_dataset.modalities, train_dataset.column_map)
     if args.acc_used:
         model.to(device)
-    print("Model created")
+    logging.info("Model created")
     model.load_state_dict(torch.load(os.path.join(args.saved_model_path, f'central_simul_gb_start_model.pt')) )
 
     criterion = nn.CrossEntropyLoss()
@@ -122,11 +121,11 @@ def main():
 
     modality_weights = initialize_weight_dict(model.modalities)
 
-    print("Train loop variables created")
+    logging.info("Train loop variables created")
 
     for super_epoch in range(args.num_super_epochs):
 
-        print(f'Super epoch {super_epoch+1}\n') 
+        logging.info(f'Super epoch {super_epoch+1}\n') 
 
 
         ## Train model for train_epochs epochs and validate
@@ -135,12 +134,12 @@ def main():
                               scheduler, train_acc, train_loss_dict, val_acc,
                               val_loss_dict, total_steps_taken, valid_loss_min,
                               modality_weights, train_mode="train")
-        # print(train_loss_dict)
-        # print(train_acc)
-        # print(val_loss_dict)
-        # print(val_acc)
-        ## Print Stats
-        print(f'Super epoch [{super_epoch}/{args.num_super_epochs}], \
+        # logging.info(train_loss_dict)
+        # logging.info(train_acc)
+        # logging.info(val_loss_dict)
+        # logging.info(val_acc)
+        ## logging.info Stats
+        logging.info(f'Super epoch [{super_epoch}/{args.num_super_epochs}], \
             \ntrain loss: {train_loss_dict["multimodal"][-1]:.4f}, train acc: {train_acc[-1]:.4f} \
             \nvalidation loss: {val_loss_dict["multimodal"][-1]:.4f}, validation acc: {val_acc[-1]:.4f}\n')
         
@@ -151,7 +150,7 @@ def main():
                               val_gb_loss_dict, total_steps_taken, valid_loss_min,
                               modality_weights, train_mode="we")
         
-        print(f'Super epoch [{super_epoch}/{args.num_super_epochs}], \
+        logging.info(f'Super epoch [{super_epoch}/{args.num_super_epochs}], \
             weight estimation \
             \ntrain loss: {train_gb_loss_dict["multimodal"][-1]:.4f}\
             \nvalidation loss: {val_gb_loss_dict["multimodal"][-1]:.4f}')
@@ -164,7 +163,7 @@ def main():
         # if network_learned:
         #     valid_loss_min = val_loss[-1]
         #     torch.save(model.state_dict(), os.path.join(SAVE_DIR, 'classification_model_multimodal_centralized.pt'))
-        #     print('Saving current model due to improvement')
+        #     logging.info('Saving current model due to improvement')
 
             
     
@@ -189,13 +188,13 @@ def main():
             _, pred_cm = torch.max(outputs_cm_mm, dim=1)
             _, target_cm_label = torch.max(target_cm, dim=1)
             
-            # print(pred_cm.numpy(force=True))
+            # logging.info(pred_cm.numpy(force=True))
             cm_pred = np.append(cm_pred, pred_cm.numpy(force=True))
             cm_target = np.append(cm_target, target_cm_label.numpy(force=True))
         
         final_f1_score = f1_score(cm_target, cm_pred)
-        print(f"Final model f1-score: {final_f1_score}")
-        # print(cm_target)
+        logging.info(f"Final model f1-score: {final_f1_score}")
+        # logging.info(cm_target)
         cm = confusion_matrix(cm_target, cm_pred, labels=[0,1])
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
         disp.plot()

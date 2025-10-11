@@ -1,11 +1,9 @@
 import os
-import torch
 import numpy as np
 import pandas as pd
-from torch.utils.data import Dataset
 import random
-import math
 from collections import defaultdict
+import logging
 
 from datasets.dataset_classes import CustomMultiModalDatasetStratified
 
@@ -14,7 +12,7 @@ def create_mm_fed_strat(features, labels, fraction, modalities, column_map, data
     
     # data_path = os.path.join(".", "multi_modal_features", time_label)
 
-    print(modalities)
+    logging.info(modalities)
 
     if random_state:
         random.seed(random_state)
@@ -51,7 +49,7 @@ def create_mm_fed_strat(features, labels, fraction, modalities, column_map, data
 def create_datasets_fed_stratified(args, client_name, data_path, random_state):
     if args.num_fold in [0, 1]:
         if client_name == 'brca':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -79,9 +77,9 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
 
             column_map = {"mrna": mrna_columns, "image":image_columns, "clinical":clinical_columns}
 
-            # print(mrna_table.pid)
-            # print(image_table.pid)
-            # print(clinical_table.pid)
+            # logging.info(mrna_table.pid)
+            # logging.info(image_table.pid)
+            # logging.info(clinical_table.pid)
             multi_modal_frame = mrna_table.merge(image_table, how="right", on="pid").merge(clinical_table, how="right", on="pid")
             
             # stage_table['stage'] = stage_table.stage.map(lambda x: map_to_one_hot_binary(x))
@@ -139,7 +137,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             # return [test_dataset, mm_1_dataset, mm_2_dataset, mm_3_dataset, img_1_dataset, mrna_1_dataset, img_2_dataset, mrna_2_dataset]
         
         elif client_name == 'lusc':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -207,7 +205,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             # return [test_dataset, mm_dataset, bm_dataset, um_dataset]
         
         elif client_name == 'lihc':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -276,7 +274,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
     
     elif args.num_fold == 2:
         if client_name == 'brca':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -304,9 +302,9 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
 
             column_map = {"mrna": mrna_columns, "image":image_columns, "clinical":clinical_columns}
 
-            # print(mrna_table.pid)
-            # print(image_table.pid)
-            # print(clinical_table.pid)
+            # logging.info(mrna_table.pid)
+            # logging.info(image_table.pid)
+            # logging.info(clinical_table.pid)
             multi_modal_frame = mrna_table.merge(image_table, how="right", on="pid").merge(clinical_table, how="right", on="pid")
             
             # stage_table['stage'] = stage_table.stage.map(lambda x: map_to_one_hot_binary(x))
@@ -362,7 +360,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             # return [test_dataset, mm_1_dataset, mm_2_dataset, mm_3_dataset, img_1_dataset, mrna_1_dataset, img_2_dataset, mrna_2_dataset]
         
         elif client_name == 'lusc':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -430,7 +428,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             
         
         elif client_name == 'lihc':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -500,7 +498,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
     
     elif args.num_fold == 3:
         if client_name == 'brca':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -528,9 +526,9 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
 
             column_map = {"mrna": mrna_columns, "image":image_columns, "clinical":clinical_columns}
 
-            # print(mrna_table.pid)
-            # print(image_table.pid)
-            # print(clinical_table.pid)
+            # logging.info(mrna_table.pid)
+            # logging.info(image_table.pid)
+            # logging.info(clinical_table.pid)
             multi_modal_frame = mrna_table.merge(image_table, how="right", on="pid").merge(clinical_table, how="right", on="pid")
             
             # stage_table['stage'] = stage_table.stage.map(lambda x: map_to_one_hot_binary(x))
@@ -587,7 +585,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             # return [test_dataset, mm_1_dataset, mm_2_dataset, mm_3_dataset, img_1_dataset, mrna_1_dataset, img_2_dataset, mrna_2_dataset]
         
         elif client_name == 'lusc':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -655,7 +653,7 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             
         
         elif client_name == 'lihc':
-            # print(client_name)
+            # logging.info(client_name)
             mrna_file_name = client_name + '_mrna.csv'
             mrna_file_path = os.path.join(data_path, mrna_file_name)
             mrna_table = pd.read_csv(mrna_file_path, delimiter=",")
@@ -724,6 +722,6 @@ def create_datasets_fed_stratified(args, client_name, data_path, random_state):
             # return [test_dataset, mm_dataset, bm_dataset, um_dataset]
     
     else:
-        print("no data available for cohort")
+        logging.info("no data available for cohort")
         raise ValueError
 

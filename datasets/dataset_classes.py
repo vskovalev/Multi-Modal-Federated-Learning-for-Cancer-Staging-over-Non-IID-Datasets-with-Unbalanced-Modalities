@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 
-from dataset_utils import collect_labels_from_df, remove_unwanted_labels, map_to_one_hot, map_to_one_hot_binary
+from dataset_utils import map_to_one_hot_binary
 
 ### Multimodal Dataset ###
 class CustomMultiModalDatasetStratified(Dataset):
@@ -27,12 +27,12 @@ class CustomMultiModalDatasetStratified(Dataset):
     def __getitem__(self, index):
 
         feature_set = []
-        # print(self.features['clinical'][index])
+        # logging.info(self.features['clinical'][index])
         for modality in self.features.keys():
-            # print(len(self.features[modality][index]))
+            # logging.info(len(self.features[modality][index]))
             feature_set.extend(self.features[modality][index])
         label = self.labels[index]
-        # print(len(feature_set))
+        # logging.info(len(feature_set))
         feature_tensor = torch.Tensor(feature_set)
         label_tensor = torch.Tensor(label)
 

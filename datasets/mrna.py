@@ -1,21 +1,18 @@
 import os
-import torch
 import numpy as np
 import pandas as pd
-# from torchvision import transforms as transforms
-from torch.utils.data import Dataset
 import random
-import math
 from collections import defaultdict
+import logging
 
-from dataset_utils import collect_labels_from_df, remove_unwanted_labels, map_to_one_hot, map_to_one_hot_binary
+from dataset_utils import remove_unwanted_labels, map_to_one_hot_binary
 from datasets.dataset_classes import CustomRNADatasetStratified
 
 
 
 def create_mrna_train_test_strat(fraction, data_path, random_state=None):
     genes_path = os.path.join(data_path, "Complete_mRNAseq.csv")
-    print(genes_path)
+    logging.info(genes_path)
     gene_table = pd.read_table(genes_path, delimiter=',', low_memory=False).apply(lambda x: x.astype(str).str.lower())
     gene_table = gene_table.transpose()
     gene_table.reset_index(inplace=True)
@@ -56,7 +53,7 @@ def create_mrna_train_test_strat(fraction, data_path, random_state=None):
     indices_per_label = defaultdict(list)
 
     for index, label in enumerate(labels):
-        # print(np.argmax(label))
+        # logging.info(np.argmax(label))
         indices_per_label[np.argmax(label)].append(index)
     
     first_set_indices, second_set_indices = list(), list()

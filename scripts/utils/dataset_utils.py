@@ -1,8 +1,4 @@
-import numpy as np
 import pandas as pd
-import random
-import math
-from collections import defaultdict
 
 def collect_labels_from_df(client_name:str) -> None:
     clinical_table = pd.read_csv(client_name+".clin.merged.picked.txt", delimiter="\t")

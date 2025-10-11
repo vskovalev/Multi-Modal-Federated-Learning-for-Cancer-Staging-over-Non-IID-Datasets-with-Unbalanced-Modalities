@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import torch
 from models import *
 from train_functions.federated.utils import *
@@ -17,13 +21,13 @@ if MODE == 'no_attention':
     for modalities in modality_list:
         model = model_assigner(modalities)
         torch.save(model.state_dict(), f"../saved_models/federated_{modality_to_classifier_mapper(modalities)}_start_model.pt")
-        print(modality_to_classifier_mapper(modalities))
+        logging.info(modality_to_classifier_mapper(modalities))
 
 elif MODE == 'vanilla_attention':
     for modalities in modality_list:
         model = CustomFederatedDistributedAttentionModel(modalities=modalities)
         torch.save(model.state_dict(), f"../saved_models/federated_attention_{modality_to_classifier_mapper(modalities)}_start_model.pt")
-        print(modality_to_classifier_mapper(modalities))
+        logging.info(modality_to_classifier_mapper(modalities))
 
 
 

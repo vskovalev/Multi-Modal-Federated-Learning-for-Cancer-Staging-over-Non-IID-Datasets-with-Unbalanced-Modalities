@@ -3,19 +3,20 @@ import numpy as np
 import os
 import torch
 from torch import nn
-from torch import optim
 from torch.utils.data import DataLoader
-from copy import deepcopy
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score
-from datetime import datetime
 import gc
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from datasets.multimodal_federated import create_datasets_fed_stratified
 from models.multimodal import CustomFederatedModel
 from train_functions.federated.utils import *
 from train_functions.federated.gb import init_loss_dict
-from fed_arg_parser import parse_arguments 
-from setup_utils import setup_gpu_device, set_up_base_fed
+from scripts.utils.fed_arg_parser import parse_arguments 
+from scripts.utils.setup_utils import setup_gpu_device, set_up_base_fed
     
 def main():
     args = parse_arguments()
@@ -68,7 +69,7 @@ def main():
             if clientbuildnum==args.num_fold:
                 network['validation_dataloaders'].append(DataLoader(datasets[clientbuildnum], batch_size=1))
                 network['validation_len'] += len(network['validation_dataloaders'][-1])
-                print(f"Test dataset for cohort {cohort} added with size {len(datasets[clientbuildnum])}.")
+                logging.info(f"Test dataset for cohort {cohort} added with size {len(datasets[clientbuildnum])}.")
             else:
                 network['clients'].append(create_client(cohort, clientbuildnum, datasets[clientbuildnum], args, device))
 
@@ -126,7 +127,7 @@ def main():
     for fed_round in range(args.num_fed_loops):
 
         network['round_wsl'] = 0
-        print(f"\n \n### Start of federated round {fed_round+1} ###")
+        logging.info(f"\n \n### Start of federated round {fed_round+1} ###")
 
 
         ### Training on multiple modalities ###
@@ -153,14 +154,14 @@ def main():
         for client in network['clients']:
 
             if device==torch.device("cuda:0"):
-                print(f"{torch.cuda.device_count()} cuda available")
-                print(f"{torch.cuda.memory_allocated(0)} memory allocated on cuda device 0")
-                print("Device IS cuda, collecting garbage.")
+                logging.info(f"{torch.cuda.device_count()} cuda available")
+                logging.info(f"{torch.cuda.memory_allocated(0)} memory allocated on cuda device 0")
+                logging.info("Device IS cuda, collecting garbage.")
                 torch.cuda.empty_cache()
                 gc.collect()
-                print(f"{torch.cuda.memory_allocated(1)} memory allocated on cuda device 0")
+                logging.info(f"{torch.cuda.memory_allocated(1)} memory allocated on cuda device 0")
 
-            print(f"Training client {client['cohort_id']}")
+            logging.info(f"Training client {client['cohort_id']}")
             
             ## Loading Global Model Weights in the Beginning of Federated Loop
             sync_client_with_global(client, network['global_model'], network['global_classifiers'])
@@ -170,7 +171,7 @@ def main():
 
             for epoch in range(NUM_EPOCHS[client['cohort_id']]):
                 
-                print(f'Epoch {epoch}\n')
+                logging.info(f'Epoch {epoch}\n')
                 train_one_epoch(client, args, device, criterion)
 
                 ## Validate Model ##
@@ -180,9 +181,9 @@ def main():
                     client['valid_loss_min'] = client['valid_loss_memory'][-1]
                     model_save_dir = os.path.join(SAVE_DIR, f"{client['cohort_id']}.pt")
                     torch.save(client['model'].state_dict(), model_save_dir)
-                    print('Saving current model due to improvement')
+                    logging.info('Saving current model due to improvement')
 
-            print(f"Fed round [{fed_round}],\nTrain loss: {client['train_loss_memory'][-1]:.4f}, train acc: {client['train_acc_memory'][-1]:.4f} \n \
+            logging.info(f"Fed round [{fed_round}],\nTrain loss: {client['train_loss_memory'][-1]:.4f}, train acc: {client['train_acc_memory'][-1]:.4f} \n \
                     validation loss: {client['valid_loss_memory'][-1]:.4f}, validation acc: {client['valid_acc_memory'][-1]:.4f}")
             
             
@@ -206,15 +207,15 @@ def main():
         if network['global_valid_loss_memory'][-1] < network['global_model_min_loss']:
             network['global_model_min_loss'] = network['global_valid_loss_memory'][-1]
             network['steps_without_improvements'] = 0
-            print("improvement, saving model")
+            logging.info("improvement, saving model")
             eval_model_save_dir = os.path.join(SAVE_DIR, f"best_global.pt")
             torch.save(network['global_model'].state_dict(), eval_model_save_dir)
         else:
             network['steps_without_improvements'] += 1
-            print(f"{network['steps_without_improvements']} steps with no improvement.")
+            logging.info(f"{network['steps_without_improvements']} steps with no improvement.")
             
         if network['steps_without_improvements'] == args.stop_criteria:
-            print("no improvement in 5 rounds. halting training.")
+            logging.info("no improvement in 5 rounds. halting training.")
             break
     
     ### Saving Results ###
@@ -255,7 +256,7 @@ def main():
 
             
             for modality in client['model'].modalities:
-                    # print(torch.all(client['model'].encoders[modality].state_dict()['fc1.weight'].eq(network['global_model'].encoders[modality].state_dict()['fc1.weight'])))
+                    # logging.info(torch.all(client['model'].encoders[modality].state_dict()['fc1.weight'].eq(network['global_model'].encoders[modality].state_dict()['fc1.weight'])))
                 getattr(client['model'], modality+"_encoder").load_state_dict(getattr(network['global_model'], modality+"_encoder").state_dict())
                 
                 
@@ -264,16 +265,16 @@ def main():
             #     kirekhar.append(client['model'].classifier.state_dict()['4.weight'])
             #     if len(kirekhar) > 1:
             #         for kirekhar_counter in range(len(kirekhar)-1):
-            #             print(torch.all(client['model'].classifier.state_dict()['4.weight'].eq(kirekhar[kirekhar_counter])))
+            #             logging.info(torch.all(client['model'].classifier.state_dict()['4.weight'].eq(kirekhar[kirekhar_counter])))
         
             correct_t = 0
             total_t = 0
             batch_loss = 0  
             cm_pred = np.array([])
             cm_target = np.array([])
-            # print(client['model'].encoders['mrna'].dropout.training)
+            # logging.info(client['model'].encoders['mrna'].dropout.training)
             # if (modality_to_classifier_mapper(client['model'].modalities) == 'mrna_image'):
-            #         print(torch.all(client['model'].encoders['mrna'].state_dict()['fc1.weight'].eq(network['global_model'].encoders['mrna'].state_dict()['fc1.weight'])))
+            #         logging.info(torch.all(client['model'].encoders['mrna'].state_dict()['fc1.weight'].eq(network['global_model'].encoders['mrna'].state_dict()['fc1.weight'])))
             for val_loader in network['validation_dataloaders']:
                 for val_batch_idx, (data_t, target_t) in enumerate(val_loader):
 
@@ -282,7 +283,7 @@ def main():
                         target_t = target_t.to(device)
                     
                     # if (modality_to_classifier_mapper(client['model'].modalities) == 'mrna_image'):
-                    #     print(torch.all(client['model'].classifier.state_dict()['4.weight'].eq(network['global_classifiers'][modality_to_classifier_mapper(client['modalities'])].state_dict()['4.weight'])))
+                    #     logging.info(torch.all(client['model'].classifier.state_dict()['4.weight'].eq(network['global_classifiers'][modality_to_classifier_mapper(client['modalities'])].state_dict()['4.weight'])))
                         
                     outputs_t = client['model'](data_t)
                     loss_t = criterion(outputs_t, target_t)
@@ -295,10 +296,10 @@ def main():
                     cm_target = np.append(cm_target, target_t_label.numpy(force=True))
             
             # if (modality_to_classifier_mapper(client['model'].modalities) == 'mrna_image'):
-            #     print(cm_pred)
-            #     print(cm_target)
+            #     logging.info(cm_pred)
+            #     logging.info(cm_target)
             final_f1_score = f1_score(cm_target, cm_pred, average='macro')
-            print(f"Final model f1-score: {final_f1_score}")
+            logging.info(f"Final model f1-score: {final_f1_score}")
             cm = confusion_matrix(cm_target, cm_pred, labels=[0,1])
             disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[0,1])
             disp.plot()

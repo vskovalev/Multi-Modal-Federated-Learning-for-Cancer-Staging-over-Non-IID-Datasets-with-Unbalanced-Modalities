@@ -1,7 +1,8 @@
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import torch
-import torch.nn as nn
-from models import CustomRNAModel
-from copy import deepcopy
 import numpy as np
 
 def return_scaled_weights(model, client_batch_num:int, total_batch_num:int):
@@ -19,8 +20,8 @@ def return_scaled_weights(model, client_batch_num:int, total_batch_num:int):
     with torch.no_grad():
         for layer_name in layer_keys:
             final_scaled_weights[layer_name] = {}
-            # print(layer_name)
-            # print(model.track_layers[layer_name])
+            # logging.info(layer_name)
+            # logging.info(model.track_layers[layer_name])
             final_scaled_weights[layer_name]['weight'] = coeff * model.track_layers[layer_name].weight.data
             final_scaled_weights[layer_name]['bias'] = coeff * model.track_layers[layer_name].bias.data
 
@@ -96,29 +97,29 @@ def is_bi_modal(modalities):
 def average_encoder_weights(global_model_encoder, encoder_dict, dataset_sizes, modality, device):
     with torch.no_grad():
         for key in global_model_encoder.state_dict().keys():
-            # print(f"aggregating {key} layer")
+            # logging.info(f"aggregating {key} layer")
             if not 'num_batches_tracked' in key:
                 sum_of_sizes = 0
                 temp = torch.zeros_like(global_model_encoder.state_dict()[key]).to(device=device)
                 # global_model_encoder.state_dict()[key] = torch.zeros(global_model_encoder.state_dict()[key].size())
                 for (cohort_id, cohort_weights) in encoder_dict.items():
                     
-                    # print(cohort_weights.state_dict()[key])
+                    # logging.info(cohort_weights.state_dict()[key])
                     # global_model_encoder.state_dict()[key] += cohort_weights.state_dict()[key].data.clone() * dataset_sizes[cohort_id]
-                    # print(temp.get_device())
-                    # print(cohort_weights.state_dict()[key].get_device())
+                    # logging.info(temp.get_device())
+                    # logging.info(cohort_weights.state_dict()[key].get_device())
                     temp += cohort_weights.state_dict()[key] * dataset_sizes[cohort_id]
                     sum_of_sizes += dataset_sizes[cohort_id]
-                    # print(dataset_sizes[cohort_id])
-                # print(sum_of_sizes)
+                    # logging.info(dataset_sizes[cohort_id])
+                # logging.info(sum_of_sizes)
                 # if modality == 'mrna':
                 #     if key == 'fc1.weight':
-                #         print(global_model_encoder.state_dict()[key]/sum_of_sizes)
+                #         logging.info(global_model_encoder.state_dict()[key]/sum_of_sizes)
                 temp /= sum_of_sizes
                 global_model_encoder.state_dict()[key].data.copy_(temp)
                 # if modality == 'mrna':
                 #     if key == 'fc1.weight':
-                #         print(global_model_encoder.state_dict()[key])
+                #         logging.info(global_model_encoder.state_dict()[key])
     
     return global_model_encoder
 
@@ -126,29 +127,29 @@ def random_average_attention_weights(global_model_encoder, encoder_dict, dataset
     selected_layer = "fc1" if np.random.random(size=1)>0.5 else "fc2"
     with torch.no_grad():
         for key in global_model_encoder.state_dict().keys():
-            # print(f"aggregating {key} layer")
+            # logging.info(f"aggregating {key} layer")
             if selected_layer in key:
                 sum_of_sizes = 0
                 temp = torch.zeros_like(global_model_encoder.state_dict()[key]).to(device=device)
                 # global_model_encoder.state_dict()[key] = torch.zeros(global_model_encoder.state_dict()[key].size())
                 for (cohort_id, cohort_weights) in encoder_dict.items():
                     
-                    # print(cohort_weights.state_dict()[key])
+                    # logging.info(cohort_weights.state_dict()[key])
                     # global_model_encoder.state_dict()[key] += cohort_weights.state_dict()[key].data.clone() * dataset_sizes[cohort_id]
-                    # print(temp.get_device())
-                    # print(cohort_weights.state_dict()[key].get_device())
+                    # logging.info(temp.get_device())
+                    # logging.info(cohort_weights.state_dict()[key].get_device())
                     temp += cohort_weights.state_dict()[key] * dataset_sizes[cohort_id]
                     sum_of_sizes += dataset_sizes[cohort_id]
-                    # print(dataset_sizes[cohort_id])
-                # print(sum_of_sizes)
+                    # logging.info(dataset_sizes[cohort_id])
+                # logging.info(sum_of_sizes)
                 # if modality == 'mrna':
                 #     if key == 'fc1.weight':
-                #         print(global_model_encoder.state_dict()[key]/sum_of_sizes)
+                #         logging.info(global_model_encoder.state_dict()[key]/sum_of_sizes)
                 temp /= sum_of_sizes
                 global_model_encoder.state_dict()[key].data.copy_(temp)
                 # if modality == 'mrna':
                 #     if key == 'fc1.weight':
-                #         print(global_model_encoder.state_dict()[key])
+                #         logging.info(global_model_encoder.state_dict()[key])
     
     return global_model_encoder
 
@@ -160,20 +161,20 @@ def average_encoder_weights_regularized(global_model_encoder, encoder_dict, data
             aggregation_result = torch.zeros(global_model_encoder.state_dict()[key].size())
             for (cohort_id, cohort_weights) in encoder_dict.items():
                 
-                # print(cohort_weights.state_dict()[key])
+                # logging.info(cohort_weights.state_dict()[key])
                 aggregation_result += cohort_weights.state_dict()[key].data.clone() * dataset_sizes[cohort_id]
                 sum_of_sizes += dataset_sizes[cohort_id]
-                # print(dataset_sizes[cohort_id])
-            # print(sum_of_sizes)
+                # logging.info(dataset_sizes[cohort_id])
+            # logging.info(sum_of_sizes)
             # if modality == 'mrna':
             #     if key == 'fc1.weight':
-            #         print(global_model_encoder.state_dict()[key]/sum_of_sizes)
+            #         logging.info(global_model_encoder.state_dict()[key]/sum_of_sizes)
             aggregation_result /= sum_of_sizes
             global_model_encoder.state_dict()[key] += (1-gamma) * aggregation_result
 
             # if modality == 'mrna':
             #     if key == 'fc1.weight':
-            #         print(global_model_encoder.state_dict()[key])
+            #         logging.info(global_model_encoder.state_dict()[key])
     
     return global_model_encoder
 
@@ -187,9 +188,9 @@ def average_classifier_weights(global_model_classifier, classifier_dict, dataset
             # torch.save(f'{cohort_id}_{modality}_weights.csv')
             global_model_classifier.state_dict()[key] += cohort_weights.state_dict()[key] * dataset_sizes[cohort_id]
             sum_of_sizes += dataset_sizes[cohort_id]
-            # print(dataset_sizes[cohort_id])
-        # print(sum_of_sizes)
-        # print(global_model_encoder.state_dict()[key]/sum_of_sizes)
+            # logging.info(dataset_sizes[cohort_id])
+        # logging.info(sum_of_sizes)
+        # logging.info(global_model_encoder.state_dict()[key]/sum_of_sizes)
         global_model_classifier.state_dict()[key] = global_model_classifier.state_dict()[key]/sum_of_sizes
     
     return global_model_classifier
