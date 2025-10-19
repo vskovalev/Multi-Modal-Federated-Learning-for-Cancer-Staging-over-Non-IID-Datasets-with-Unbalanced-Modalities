@@ -263,7 +263,7 @@ def main():
             batch_loss = 0  
             cm_pred = np.array([])
             cm_target = np.array([])
-             for val_loader in network['validation_dataloaders']:
+            for val_loader in network['validation_dataloaders']:
                 for val_batch_idx, (data_t, target_t) in enumerate(val_loader):
 
                     if args.acc_used:

@@ -1,6 +1,8 @@
 import torch
 from torch.utils.data import Dataset
-
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts', 'utils'))
 from dataset_utils import map_to_one_hot_binary
 
 ### Multimodal Dataset ###

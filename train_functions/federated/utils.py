@@ -1,10 +1,12 @@
 import torch
 import os
-from models import CustomRNAModel
+import logging
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from models.multimodal import CustomRNAModel, CustomImgModel, CustomClinicalModel, CustomMultiModalModel, CustomRNAImgModel, CustomRNAClinModel, CustomImgClinModel, CustomFederatedModel
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import DataLoader
-from models.multimodal import *
 from torch import optim
 
 
